@@ -28,7 +28,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2019
     strategy:
         fail-fast: false
         matrix:
@@ -45,24 +45,19 @@ jobs:
                 sdk_version: '10.0.10240.0'
     steps:
 
-      - name: Cache VS packages
-        id: cache-vs-packages
+      - name: Cache SDK
         uses: actions/cache@v4
-        with:
-          path: C:\ProgramData\Microsoft\VisualStudio\Packages
-          key: vs-pkgs-${{ matrix.sdk_version }}-${{ matrix.arch_compilename }}
-
+        with: 
+          path: 'C:\Program Files (x86)\Windows Kits\10\10.0.10240.0'
+          key: win10-sdk-10240
+      
       - name: Install Windows SDK 10.0.10240
-        if: steps.cache-vs-packages.outputs.cache-hit != 'true'
+        if: steps.win10-sdk-10240.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
-                     -latest -products * -property installationPath
-
-          & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe" `
-              modify --installPath $vsPath `
-              --add Microsoft.VisualStudio.Component.Windows10SDK.10240 `
-              --quiet --wait --norestart
+          $stub    = "$env:RUNNER_TEMP\sdksetup.exe"
+          Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=619296' -OutFile $stub
+          & $stub /Quiet /NoRestart /Features OptionId.DesktopCPP,OptionId.WindowsDesktopDebuggers
               
       - name: Setup MSVC for ${{ matrix.arch }}
         uses: ilammy/msvc-dev-cmd@v1
