@@ -37,13 +37,33 @@ jobs:
                 arch_compilename: amd64_arm
                 vcpkg_arch: arm-windows-static
                 cmake_arch: ARM
-                sdk_version: '10.0.17763.0'
+                sdk_version: '10.0.10240.0'
               - arch: arm64
                 arch_compilename: arm64
                 vcpkg_arch: arm64-windows-static
                 cmake_arch: ARM64
-                sdk_version: '10.0.17763.0'
+                sdk_version: '10.0.10240.0'
     steps:
+
+      - name: Cache VS packages
+        id: cache-vs-packages
+        uses: actions/cache@v4
+        with:
+          path: C:\ProgramData\Microsoft\VisualStudio\Packages
+          key: vs-pkgs-${{ matrix.sdk_version }}-${{ matrix.arch_compilename }}
+
+      - name: Install Windows SDK 10.0.10240
+        if: steps.cache-vs-packages.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
+                     -latest -products * -property installationPath
+
+          & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe" `
+              modify --installPath $vsPath `
+              --add Microsoft.VisualStudio.Component.Windows10SDK.10240 `
+              --quiet --wait --norestart
+              
       - name: Setup MSVC for ${{ matrix.arch }}
         uses: ilammy/msvc-dev-cmd@v1
         with:
